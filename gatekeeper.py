@@ -7,6 +7,8 @@ from . import config
 intents = discord.Intents.default()
 client = discord.Client(intents=intents)
 
+# Mapping of guild IDs to guild log channels
+
 @client.event
 async def on_ready():
     print(f"Logged in as {client.user}")
@@ -34,8 +36,14 @@ async def on_message(msg):
         user = converter.convert(str(ban_id))
         try:
             await guild.ban(user, reason=parsed_content[1])
+            result = f"Banned {user.name} from {guild.name}"
         except:
-            print(f"Could not ban from {guild.name}")
+            result = f"Could not ban from {guild.name}"
+        finally:
+            if str(guild.id) in config.guild_log_channels:
+                log_channel = guild.get_channel(config.guild_log_channels[str(guild.id)])
+                log_channel.send(result)
+
 
     await msg.add_reaction("👍")
     
