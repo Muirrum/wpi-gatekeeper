@@ -2,7 +2,7 @@ import discord
 import collections
 from discord.ext import commands
 
-from . import config
+import config
 
 intents = discord.Intents.default()
 client = discord.Client(intents=intents)
