@@ -16,7 +16,6 @@ async def on_ready():
 @client.event
 async def on_message(msg):
     # If it's a bot or outside of the pre-ban list or not an admin of the server
-    print(msg.author.guild_permissions.administrator)
     if msg.author.bot or str(msg.channel.id) != "811585504214646804" or not msg.author.guild_permissions.administrator:
         return
 
@@ -24,9 +23,9 @@ async def on_message(msg):
     parsed_content = content.split(":")
 
     try:
-        ban_id = int(parsed_content[0])
+        ban_id = int(parsed_content[1])
     except ValueError:
-        await msg.channel.send("Invalid format. Must be `<USERID>:<REASON>` without brackets")
+        await msg.channel.send("Invalid format. Must be `<ACTION>:<USERID>:<REASON>` without brackets")
         return
 
     try:
@@ -36,13 +35,26 @@ async def on_message(msg):
         return
 
     errors = ""
+    if parsed_content[0].lower() == "ban":
+        ban = True
+    elif parsed_content[0].lower() == "pardon":
+        ban = False
+    else:
+        await msg.channel.send("Invalid action, must either be `ban` or `pardon`")
+        return
+
     for guild in client.guilds:
         try:
-            # Ban the user and purge messages up to 7 days ago
-            await guild.ban(user, delete_message_days=7, reason=parsed_content[1], )
-            result = f"Banned {user.mention} from {guild.name}"
+            if ban:
+                # Ban the user and purge messages up to 7 days ago
+                await guild.ban(user, delete_message_days=7, reason=parsed_content[1], )
+                result = f"Banned {user.mention} from {guild.name}"
+            else:
+                await guild.unban(user, reason=parsed_content[2])
+                result = f"Pardoned {user.mention} from {guild.name}"
+
         except discord.Forbidden:
-            result = f"Missing permissions to ban {user.mention} from {guild.name}\n"
+            result = f"Missing permissions to {parsed_content[0].lower()} {user.mention} from {guild.name}\n"
             errors += result
         finally:
             if str(guild.id) in config.guild_log_channels:
@@ -53,9 +65,9 @@ async def on_message(msg):
                     errors += "Missing permissions to send logging message in " + guild.name + "\n"
 
     if len(errors) > 0:
-        await msg.channel.send(f"Completed pre-ban of {user.mention} from {len(client.guilds)} guilds\n\n__Errors__\n" + errors)
+        await msg.channel.send(f"Completed {parsed_content[0].lower()} of {user.mention} from {len(client.guilds)} guilds\n\n__Errors__\n" + errors)
     else:
-        await msg.channel.send(f"Completed pre-ban of {user.mention} from {len(client.guilds)} guilds")
+        await msg.channel.send(f"Completed {parsed_content[0].lower()} of {user.mention} from {len(client.guilds)} guilds")
 
 
 client.run(config.discord_token)
