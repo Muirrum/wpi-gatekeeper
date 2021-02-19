@@ -1,6 +1,4 @@
 import discord
-import collections
-from discord.ext import commands
 
 import config
 
