@@ -7,16 +7,19 @@ import config
 intents = discord.Intents.default()
 client = discord.Client(intents=intents)
 
+
 # Mapping of guild IDs to guild log channels
 
 @client.event
 async def on_ready():
     print(f"Logged in as {client.user}")
 
+
 @client.event
 async def on_message(msg):
-    # If it's a bot or outside of the pre-ban list
-    if msg.author.bot or str(msg.channel.id) != "811585504214646804":
+    # If it's a bot or outside of the pre-ban list or not an admin of the server
+    print(msg.author.guild_permissions.administrator)
+    if msg.author.bot or str(msg.channel.id) != "811585504214646804" or not msg.author.guild_permissions.administrator:
         return
 
     content = msg.content
@@ -25,37 +28,36 @@ async def on_message(msg):
     try:
         ban_id = int(parsed_content[0])
     except ValueError:
-        msg.channel.send("Invalid format. Must be `<USERID>:<REASON>` without brackets")
+        await msg.channel.send("Invalid format. Must be `<USERID>:<REASON>` without brackets")
         return
-    
-    guilds = await client.guilds()
 
-    for guild in guilds:
-        ctx = gen_context(guild)
-        converter = commands.UserConverter()
-        user = converter.convert(str(ban_id))
+    try:
+        user = await client.fetch_user(ban_id)
+    except discord.NotFound:
+        await msg.channel.send(f"Did not find a user with the ID {ban_id}")
+        return
+
+    errors = ""
+    for guild in client.guilds:
         try:
-            await guild.ban(user, reason=parsed_content[1])
-            result = f"Banned {user.name} from {guild.name}"
-        except:
-            result = f"Could not ban from {guild.name}"
+            # Ban the user and purge messages up to 7 days ago
+            await guild.ban(user, delete_message_days=7, reason=parsed_content[1], )
+            result = f"Banned {user.mention} from {guild.name}"
+        except discord.Forbidden:
+            result = f"Missing permissions to ban {user.mention} from {guild.name}\n"
+            errors += result
         finally:
             if str(guild.id) in config.guild_log_channels:
                 log_channel = guild.get_channel(config.guild_log_channels[str(guild.id)])
-                log_channel.send(result)
+                try:
+                    await log_channel.send(result)
+                except discord.Forbidden:
+                    errors += "Missing permissions to send logging message in " + guild.name + "\n"
 
+    if len(errors) > 0:
+        await msg.channel.send(f"Completed pre-ban of {user.mention} from {len(client.guilds)} guilds\n\n__Errors__\n" + errors)
+    else:
+        await msg.channel.send(f"Completed pre-ban of {user.mention} from {len(client.guilds)} guilds")
 
-    await msg.add_reaction("👍")
-    
-
-async def gen_context(guild):
-    """
-    Generates a fake context for the converter
-    """
-    ctx = collections.namedtuple('Context', 'bot _state', module=commands.Context)
-    ctx.bot = client
-    ctx._state = await guild.text_channels[0].fetch_message(guild.text_channels[0].last_message_id)
-
-    return ctx
 
 client.run(config.discord_token)
