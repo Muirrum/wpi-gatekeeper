@@ -31,7 +31,7 @@ async def on_message(msg):
     guilds = await client.guilds()
 
     for guild in guilds:
-        ctx = get_context(guild)
+        ctx = gen_context(guild)
         converter = commands.UserConverter()
         user = converter.convert(str(ban_id))
         try:
