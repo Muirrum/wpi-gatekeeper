@@ -48,13 +48,13 @@ async def on_message(msg):
             if ban:
                 # Ban the user and purge messages up to 7 days ago
                 await guild.ban(user, delete_message_days=7, reason=parsed_content[1], )
-                result = f"Banned {user.mention} from {guild.name}"
+                result = f"Banned {user.name}#{user.discriminator} ({user.id}) from {guild.name}"
             else:
                 await guild.unban(user, reason=parsed_content[2])
-                result = f"Pardoned {user.mention} from {guild.name}"
+                result = f"Pardoned {user.name}#{user.discriminator} ({user.id}) from {guild.name}"
 
         except discord.Forbidden:
-            result = f"Missing permissions to {parsed_content[0].lower()} {user.mention} from {guild.name}\n"
+            result = f"Missing permissions to {parsed_content[0].lower()} {user.name}#{user.discriminator} ({user.id}) from {guild.name}\n"
             errors += result
         finally:
             if str(guild.id) in config.guild_log_channels:
@@ -65,9 +65,9 @@ async def on_message(msg):
                     errors += "Missing permissions to send logging message in " + guild.name + "\n"
 
     if len(errors) > 0:
-        await msg.channel.send(f"Completed {parsed_content[0].lower()} of {user.mention} from {len(client.guilds)} guilds\n\n__Errors__\n" + errors)
+        await msg.channel.send(f"Completed {parsed_content[0].lower()} of {user.name}#{user.discriminator} ({user.id}) from {len(client.guilds)} guilds\n\n__Errors__\n" + errors)
     else:
-        await msg.channel.send(f"Completed {parsed_content[0].lower()} of {user.mention} from {len(client.guilds)} guilds")
+        await msg.channel.send(f"Completed {parsed_content[0].lower()} of {user.name}#{user.discriminator} ({user.id}) from {len(client.guilds)} guilds")
 
 
 client.run(config.discord_token)
