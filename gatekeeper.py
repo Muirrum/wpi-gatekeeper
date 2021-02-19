@@ -47,7 +47,7 @@ async def on_message(msg):
         try:
             if ban:
                 # Ban the user and purge messages up to 7 days ago
-                await guild.ban(user, delete_message_days=7, reason=parsed_content[1], )
+                await guild.ban(user, delete_message_days=7, reason=parsed_content[2])
                 result = f"Banned {user.name}#{user.discriminator} ({user.id}) from {guild.name}"
             else:
                 await guild.unban(user, reason=parsed_content[2])
